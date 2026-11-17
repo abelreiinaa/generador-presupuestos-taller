@@ -2,19 +2,17 @@
   "name": "amr-17-motorsport-mechanic-shop",
   "version": "1.0.0",
   "description": "Proyecto: generador de presupuestos para AMR 17 Motorsport.",
-  "main": "index.js",
-  "directories": {
-    "test": "tests"
-  },
+  "main": "index.html",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "http-server -p 5500 -a 127.0.0.1",
+    "test": "node tests/run_test.js && node tests/run_test_save.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/abelreiinaa/app.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "Abel Miñón Reina",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/abelreiinaa/app/issues"

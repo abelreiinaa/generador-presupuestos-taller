@@ -1,7 +1,7 @@
 const { chromium } = require('playwright');
 
 (async () => {
-  const url = 'http://localhost:3000/final_v8_fixed.html';
+  const url = 'http://127.0.0.1:5500/index.html';
   console.log('Abriendo', url);
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();

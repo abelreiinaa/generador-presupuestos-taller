@@ -1,7 +1,7 @@
 const { chromium } = require('playwright');
 
 (async () => {
-  const url = 'http://localhost:3000/final_v8_fixed.html';
+  const url = 'http://127.0.0.1:5500/index.html';
   console.log('Abriendo', url);
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
@@ -15,7 +15,7 @@ const { chromium } = require('playwright');
     // Rellenar cliente y matrícula para permitir guardar
     await page.fill('input[placeholder="Nombre / Razón social"]', 'Cliente Prueba S.L.');
     await page.fill('input[placeholder="Matrícula"]', '1234ABC');
-    await page.fill('input[placeholder="Teléfono"]', '600111222');
+    await page.locator('input[placeholder="Teléfono"]').nth(1).fill('600111222');
 
     // Asegurar IVA
     await page.fill('input[aria-label="Porcentaje de IVA"]', '21');

@@ -7,13 +7,11 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
-    body{font-family:Inter,Arial,sans-serif}[x-cloak]{display:none!important}.print-only{display:none}.toast-container{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px}.toast{min-width:250px;padding:15px 20px;border-radius:8px;color:white;font-weight:500;box-shadow:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06)}.toast.success{background:#10B981}.toast.info{background:#3B82F6}.toast.error{background:#EF4444}@media print{.no-print{display:none!important}.print-only{display:block!important}body{background:white;padding:0}.container{max-width:100%;box-shadow:none;border:none}input,textarea,select{border:none!important;background:transparent!important;appearance:none}}
-    #ventana-cliente { display:none; }
-    @media print { #ventana-cliente { display:block !important; } }
+    body{font-family:Inter,Arial,sans-serif}[x-cloak]{display:none!important}.print-only{display:none}.toast-container{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px}.toast{min-width:250px;padding:15px 20px;border-radius:8px;color:white;font-weight:500;box-shadow:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06)}.toast.success{background:#10B981}.toast.info{background:#3B82F6}.toast.error{background:#EF4444}@media print{.no-print{display:none!important}.print-only{display:block!important}.print-only.flex{display:flex!important}body{background:white;padding:0}.container{max-width:100%;box-shadow:none;border:none}input,textarea,select{border:none!important;background:transparent!important;appearance:none}}
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4 md:p-8 text-gray-800">
-  <div x-data="presupuestoApp()" x-init="init()" class="max-w-6xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden container border border-gray-200">
+  <div x-data="presupuestoApp()" class="max-w-6xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden container border border-gray-200">
     <div id="toast-container" class="toast-container no-print"></div>
     <div class="bg-red-700 p-4 md:p-6 text-white flex flex-col md:flex-row justify-between items-center no-print gap-4">
       <div class="flex items-center gap-4">
@@ -106,7 +104,6 @@
         </div>
       </div>
       <div class="mt-12 pt-8 border-t-2 border-gray-200 flex justify-between gap-8 text-center print-only"><div class="w-1/2"><div class="border-b border-gray-800 h-20 mb-3"></div><p class="font-bold uppercase">Firma del taller</p><p class="text-xs text-gray-500" x-text="datos.taller.nombre"></p></div><div class="w-1/2"><div class="border-b border-gray-800 h-20 mb-3"></div><p class="font-bold uppercase">Conforme cliente</p><p class="text-xs text-gray-500" x-text="datos.cliente.nombre || 'Firma y DNI'"></p></div></div>
-      </div>
       <div class="text-center text-xs text-gray-400 mt-4 print-only">Documento generado por AMR 17 Motorsport - <span x-text="new Date().toLocaleDateString('es-ES')"></span></div>
     </div>
     <div x-show="showHistorialModal" x-cloak class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 no-print">
@@ -135,6 +132,7 @@
         items:[{ id:Date.now(), descripcion:'Mano de obra', cantidad:1, precio:45, coste:0, referencia:'' }],
         init(){
           this.cargarAutoGuardado();
+          this.$watch('datos',()=>this.guardarBorrador());
           this.toast('Modo local activo','info');
           window.__amr17_addItems = (items) => {
             let a = 0;
@@ -163,9 +161,9 @@
         duplicarPresupuesto(){ const c=JSON.parse(JSON.stringify({datos:this.datos,items:this.items,pdfTexto:this.pdfTexto})); c.datos.numero='Borrador'; c.datos.fecha=new Date().toISOString().split('T')[0]; this.datos=c.datos; this.datos.ivamodificado = false; this.items=c.items.map(x=>({...x,id:this.generateId()})); this.pdfTexto=c.pdfTexto||''; this.guardarBorrador(); this.toast('Presupuesto duplicado','success'); },
         addItem(tipo){ this.items = [...this.items, { id:this.generateId(), descripcion: tipo==='manoobra' ? 'Mano de obra' : 'Repuesto', cantidad:1, precio: tipo==='manoobra' ? 45 : 0, coste:0, referencia:'' }]; this.guardarBorrador(); },
         removeItem(i){ this.items.splice(i,1); this.guardarBorrador(); },
-        guardarLocal(datos){ const lista=JSON.parse(localStorage.getItem(this.storageKey)||'[]'); lista.push({ id:String(Date.now()), ...datos }); localStorage.setItem(this.storageKey, JSON.stringify(lista)); },
-        obtenerLocal(){ return JSON.parse(localStorage.getItem(this.storageKey)||'[]'); },
-        async guardarEnBD(){ if(!this.datos.vehiculo.matricula && !this.datos.cliente.nombre){ this.toast('Añade matrícula o cliente','error'); return; } this.isSaving=true; try{ if(this.datos.numero==='Borrador'){ const y=new Date().getFullYear(); const n=Math.floor(Math.random()*9000)+1000; this.datos.numero=`PRE-${y}-${n}`; } const reg={ numero:this.datos.numero, fecha:this.datos.fecha, cliente:JSON.parse(JSON.stringify(this.datos.cliente)), vehiculo:{...this.datos.vehiculo, matricula:(this.datos.vehiculo.matricula||'').toUpperCase()}, notas:this.datos.notas, pdfTexto:this.pdfTexto, porcentajeIva:this.datos.porcentajeIva, items:JSON.parse(JSON.stringify(this.items)), subtotal:this.subtotal, iva:this.iva, total:this.total, timestamp:Date.now() }; this.guardarLocal(reg); this.guardarBorrador(); if(this.datos.vehiculo.kilometros) this.ultimoKm=this.datos.vehiculo.kilometros; this.toast('Presupuesto guardado','success'); }catch(e){ console.error(e); this.toast('Error al guardar','error'); } finally{ this.isSaving=false; } },
+        guardarLocal(datos){ const lista=this.obtenerLocal(); const i=lista.findIndex(r=>r.numero===datos.numero); if(i>=0) lista[i]={ ...lista[i], ...datos }; else lista.push({ id:String(Date.now()), ...datos }); localStorage.setItem(this.storageKey, JSON.stringify(lista)); },
+        obtenerLocal(){ try{ return JSON.parse(localStorage.getItem(this.storageKey)||'[]'); }catch(e){ return []; } },
+        async guardarEnBD(){ if(!this.datos.vehiculo.matricula && !this.datos.cliente.nombre){ this.toast('Añade matrícula o cliente','error'); return; } this.isSaving=true; try{ if(this.datos.numero==='Borrador'){ const pref=`PRE-${new Date().getFullYear()}-`; const n=this.obtenerLocal().filter(r=>(r.numero||'').startsWith(pref)).reduce((m,r)=>Math.max(m,parseInt(r.numero.slice(pref.length))||0),0)+1; this.datos.numero=pref+String(n).padStart(4,'0'); } const reg={ numero:this.datos.numero, fecha:this.datos.fecha, cliente:JSON.parse(JSON.stringify(this.datos.cliente)), vehiculo:{...this.datos.vehiculo, matricula:(this.datos.vehiculo.matricula||'').toUpperCase()}, notas:this.datos.notas, pdfTexto:this.pdfTexto, porcentajeIva:this.datos.porcentajeIva, items:JSON.parse(JSON.stringify(this.items)), subtotal:this.subtotal, iva:this.iva, total:this.total, timestamp:Date.now() }; this.guardarLocal(reg); this.guardarBorrador(); if(this.datos.vehiculo.kilometros) this.ultimoKm=this.datos.vehiculo.kilometros; this.toast('Presupuesto guardado','success'); }catch(e){ console.error(e); this.toast('Error al guardar','error'); } finally{ this.isSaving=false; } },
         async buscarVehiculoPorMatricula(){ const m=(this.datos.vehiculo.matricula||'').trim().toUpperCase(); if(!m || m.length<4) return; const h=this.obtenerLocal().filter(r=>(r.vehiculo?.matricula||'').trim().toUpperCase()===m).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); if(h.length){ const u=h[0]; this.datos.vehiculo.marca=u.vehiculo?.marca||''; this.datos.vehiculo.modelo=u.vehiculo?.modelo||''; this.datos.vehiculo.bastidor=u.vehiculo?.bastidor||''; if(u.vehiculo?.kilometros) this.ultimoKm=u.vehiculo.kilometros; if(!this.datos.cliente.nombre && u.cliente) this.datos.cliente={...u.cliente}; this.toast('Vehículo encontrado','info'); this.guardarBorrador(); } },
         async verHistorialVehiculo(){ const m=(this.datos.vehiculo.matricula||'').trim().toUpperCase(); if(!m) return; this.historialItems=this.obtenerLocal().filter(r=>(r.vehiculo?.matricula||'').trim().toUpperCase()===m).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); this.showHistorialModal=true; },
         cargarRegistro(registro){ this.datos={ taller:{...this.datos.taller}, numero:registro.numero||'Borrador', fecha:registro.fecha||new Date().toISOString().split('T')[0], cliente:JSON.parse(JSON.stringify(registro.cliente||{nombre:'',nif:'',telefono:'',email:''})), vehiculo:JSON.parse(JSON.stringify(registro.vehiculo||{marca:'',modelo:'',matricula:'',kilometros:'',bastidor:''})), notas:registro.notas||'', porcentajeIva:registro.porcentajeIva ?? 21, ivamodificado:false }; this.items=(registro.items||[]).map(x=>({...x,id:this.generateId()})); this.pdfTexto=registro.pdfTexto||''; this.ultimoKm=this.datos.vehiculo.kilometros||null; this.showHistorialModal=false; this.guardarBorrador(); this.toast('Presupuesto cargado','success'); },
@@ -173,18 +171,19 @@
         imprimirCliente(){
           const d=this.datos; const items=this.items;
           const fmt=(v)=>new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(Number(v||0));
+          const esc=(v)=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
           const subtotal=items.reduce((s,i)=>s+((parseFloat(i.cantidad)||0)*(parseFloat(i.precio)||0)),0);
           const iva=subtotal*(d.porcentajeIva/100);
           const total=subtotal+iva;
           const filas=items.map(it=>{
-            const ref=it.referencia?`<span style="font-size:11px;color:#666;font-family:monospace">${it.referencia}</span>`:'';
-            return `<tr style="border-bottom:1px solid #e5e7eb"><td style="padding:8px 10px">${it.descripcion||''}${ref?'<br/>'+ref:''}</td><td style="padding:8px 10px;text-align:center">${it.cantidad}</td><td style="padding:8px 10px;text-align:right">${fmt(it.precio)}</td><td style="padding:8px 10px;text-align:right;font-weight:600">${fmt((parseFloat(it.cantidad)||0)*(parseFloat(it.precio)||0))}</td></tr>`;
+            const ref=it.referencia?`<span style="font-size:11px;color:#666;font-family:monospace">${esc(it.referencia)}</span>`:'';
+            return `<tr style="border-bottom:1px solid #e5e7eb"><td style="padding:8px 10px">${esc(it.descripcion)}${ref?'<br/>'+ref:''}</td><td style="padding:8px 10px;text-align:center">${esc(it.cantidad)}</td><td style="padding:8px 10px;text-align:right">${fmt(it.precio)}</td><td style="padding:8px 10px;text-align:right;font-weight:600">${fmt((parseFloat(it.cantidad)||0)*(parseFloat(it.precio)||0))}</td></tr>`;
           }).join('');
           const html=`<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Presupuesto ${d.numero} - ${d.taller.nombre}</title>
+<title>Presupuesto ${esc(d.numero)} - ${esc(d.taller.nombre)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Inter,Arial,sans-serif;color:#1f2937;padding:30px;font-size:14px}
@@ -216,31 +215,31 @@ thead th{padding:10px;text-align:left;font-size:12px;font-weight:600}
 <div style="display:flex;align-items:center;gap:16px">
 <div class="logo">🏎️</div>
 <div>
-<div class="taller-nombre">${d.taller.nombre}</div>
-<div class="taller-sub">${d.taller.slogan||''}</div>
-<div class="taller-sub">${d.taller.direccion||''} &nbsp;·&nbsp; Tel: ${d.taller.telefono||''}</div>
-<div class="taller-sub">CIF: ${d.taller.cif||''}</div>
+<div class="taller-nombre">${esc(d.taller.nombre)}</div>
+<div class="taller-sub">${esc(d.taller.slogan||'')}</div>
+<div class="taller-sub">${esc(d.taller.direccion||'')} &nbsp;·&nbsp; Tel: ${esc(d.taller.telefono||'')}</div>
+<div class="taller-sub">CIF: ${esc(d.taller.cif||'')}</div>
 </div>
 </div>
 <div class="meta">
-<strong>PRESUPUESTO Nº ${d.numero}</strong>
+<strong>PRESUPUESTO Nº ${esc(d.numero)}</strong>
 Fecha: ${new Date(d.fecha).toLocaleDateString('es-ES')}
 </div>
 </div>
 <div class="grid2">
 <div class="box">
 <div class="box-title">Cliente</div>
-<p><strong>${d.cliente.nombre||'-'}</strong></p>
-${d.cliente.nif?`<p>DNI/CIF: ${d.cliente.nif}</p>`:''}
-${d.cliente.telefono?`<p>Tel: ${d.cliente.telefono}</p>`:''}
-${d.cliente.email?`<p>${d.cliente.email}</p>`:''}
+<p><strong>${esc(d.cliente.nombre||'-')}</strong></p>
+${d.cliente.nif?`<p>DNI/CIF: ${esc(d.cliente.nif)}</p>`:''}
+${d.cliente.telefono?`<p>Tel: ${esc(d.cliente.telefono)}</p>`:''}
+${d.cliente.email?`<p>${esc(d.cliente.email)}</p>`:''}
 </div>
 <div class="box">
 <div class="box-title">Vehículo</div>
-<p><strong>${d.vehiculo.marca||''} ${d.vehiculo.modelo||''}</strong></p>
-${d.vehiculo.matricula?`<p>Matrícula: <strong>${d.vehiculo.matricula}</strong></p>`:''}
-${d.vehiculo.kilometros?`<p>Kilómetros: ${d.vehiculo.kilometros} km</p>`:''}
-${d.vehiculo.bastidor?`<p>Bastidor: ${d.vehiculo.bastidor}</p>`:''}
+<p><strong>${esc(d.vehiculo.marca||'')} ${esc(d.vehiculo.modelo||'')}</strong></p>
+${d.vehiculo.matricula?`<p>Matrícula: <strong>${esc(d.vehiculo.matricula)}</strong></p>`:''}
+${d.vehiculo.kilometros?`<p>Kilómetros: ${esc(d.vehiculo.kilometros)} km</p>`:''}
+${d.vehiculo.bastidor?`<p>Bastidor: ${esc(d.vehiculo.bastidor)}</p>`:''}
 </div>
 </div>
 <table>
@@ -255,16 +254,16 @@ ${d.vehiculo.bastidor?`<p>Bastidor: ${d.vehiculo.bastidor}</p>`:''}
 <div class="totales">
 <table>
 <tr><td>Base imponible</td><td style="text-align:right">${fmt(subtotal)}</td></tr>
-<tr><td>IVA (${d.porcentajeIva}%)</td><td style="text-align:right">${fmt(iva)}</td></tr>
+<tr><td>IVA (${esc(d.porcentajeIva)}%)</td><td style="text-align:right">${fmt(iva)}</td></tr>
 <tr><td>TOTAL</td><td style="text-align:right">${fmt(total)}</td></tr>
 </table>
 </div>
-${d.notas?`<div class="notas"><strong>Condiciones y observaciones:</strong><br/>${d.notas.replace(/\n/g,'<br/>')}</div>`:''}
+${d.notas?`<div class="notas"><strong>Condiciones y observaciones:</strong><br/>${esc(d.notas).replace(/\n/g,'<br/>')}</div>`:''}
 <div class="firmas">
-<div class="firma-box">Firma del taller<br/><span style="font-weight:400;font-size:11px">${d.taller.nombre}</span></div>
-<div class="firma-box">Conforme el cliente<br/><span style="font-weight:400;font-size:11px">${d.cliente.nombre||'Firma y DNI'}</span></div>
+<div class="firma-box">Firma del taller<br/><span style="font-weight:400;font-size:11px">${esc(d.taller.nombre)}</span></div>
+<div class="firma-box">Conforme el cliente<br/><span style="font-weight:400;font-size:11px">${esc(d.cliente.nombre||'Firma y DNI')}</span></div>
 </div>
-<div class="validez">Documento generado por ${d.taller.nombre} · ${new Date().toLocaleDateString('es-ES')}</div>
+<div class="validez">Documento generado por ${esc(d.taller.nombre)} · ${new Date().toLocaleDateString('es-ES')}</div>
 <script>window.addEventListener('load',function(){setTimeout(function(){window.print();},500);});window.addEventListener('afterprint',function(){try{window.close();}catch(e){}});<\/script>
 </body>
 </html>`;
@@ -355,13 +354,14 @@ ${d.notas?`<div class="notas"><strong>Condiciones y observaciones:</strong><br/>
             const newItems=[];
             lineas.forEach(l=>{
               const mTrab=l.match(/^(.+?)\s+(45(?:\.\d{1,2})?)\s+(\d+(?:\.\d{1,2})?)\s+(\d+(?:\.\d{1,2})?)$/);
-              if(mTrab && parseFloat(mTrab[3])>0 && parseFloat(mTrab[3])<20){
-                newItems.push({ id:this.generateId(), descripcion:mTrab[1].trim()+' (M.O.)', cantidad:parseFloat(mTrab[3]), precio:parseFloat(mTrab[2]) });
+              const esTrab=mTrab && parseFloat(mTrab[3])>0 && parseFloat(mTrab[3])<20;
+              if(esTrab){
+                newItems.push({ id:this.generateId(), descripcion:mTrab[1].trim()+' (M.O.)', cantidad:parseFloat(mTrab[3]), precio:parseFloat(mTrab[2]), coste:0, referencia:'' });
               }
               // Piezas: "Descripcion  precio  1.0  total"
               const mPieza=l.match(/^(.+?)\s+(\d+(?:\.\d{1,2})?)\s+(1(?:\.0)?)\s+(\d+(?:\.\d{1,2})?)$/);
-              if(mPieza && parseFloat(mPieza[2])>0 && parseFloat(mPieza[4])>0 && parseFloat(mPieza[4])<500){
-                newItems.push({ id:this.generateId(), descripcion:mPieza[1].trim(), cantidad:1, precio:parseFloat(mPieza[2]) });
+              if(!esTrab && mPieza && parseFloat(mPieza[2])>0 && parseFloat(mPieza[4])>0 && parseFloat(mPieza[4])<500){
+                newItems.push({ id:this.generateId(), descripcion:mPieza[1].trim(), cantidad:1, precio:parseFloat(mPieza[2]), coste:0, referencia:'' });
               }
             });
             if(newItems.length>0){
