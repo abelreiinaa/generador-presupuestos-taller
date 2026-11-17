@@ -1,127 +1,86 @@
-# AMR 17 Motorsport · Generador de presupuestos
+# AMR 17 Motorsport · Generador de Presupuestos
 
-Aplicación web de una sola página para crear, guardar e imprimir presupuestos de un taller mecánico. No necesita backend: todo se guarda en el navegador (`localStorage`).
+Aplicación web SPA (*Single Page Application*) diseñada para crear, gestionar e imprimir presupuestos en un taller mecánico. Actualmente funciona de manera 100% autónoma en el navegador utilizando `localStorage` para la persistencia de datos, e incluye una extensión de Chrome complementaria para la captura automática de recambios.
 
-## Funcionalidades
+## Funcionalidades actuales
 
-- Datos del taller, cliente, vehículo y presupuesto.
-- Líneas de repuestos y mano de obra con cantidad, coste, precio y margen.
-- Cálculo automático de base imponible, IVA (editable), total y ganancia neta.
-- Guardado con numeración correlativa `PRE-AAAA-0001`; guardar de nuevo el mismo número lo actualiza.
-- Borrador autoguardado: al recargar la página no se pierde nada.
-- Duplicar y crear presupuesto nuevo.
-- Historial por matrícula: consultar, cargar o eliminar presupuestos anteriores.
-- Importación de datos desde un PDF (PDF.js).
-- Impresión del presupuesto completo (con costes y margen) o de la copia para el cliente (sin costes).
-- Extensión de Chrome (`amr17_extension/`) que captura nombre, referencia y precio de una pieza en endado.com.
+- **Gestión integral:** Datos fiscales del taller, cliente, vehículo (matrícula, bastidor, km) y metadatos del presupuesto.
+- **Cálculo financiero dinámico:** Líneas de repuestos y mano de obra con cálculo en tiempo real de base imponible, IVA editable, total y margen de beneficio neto.
+- **Persistencia y autoguardado:** Numeración correlativa automática (`PRE-AAAA-0001`), actualización de presupuestos existentes, duplicado y autoguardado continuo en borrador para evitar pérdida de datos al recargar.
+- **Historial por matrícula:** Búsqueda, consulta, carga y eliminación de presupuestos asociados a un vehículo.
+- **Importación desde PDF:** Extracción y parseo automático de datos técnicos y tiempos desde documentos PDF (formato Autodata) mediante `PDF.js`.
+- **Doble modo de impresión:** Generación de vista de impresión interna (con costes y márgenes) y copia limpia para el cliente (sin información interna).
+- **Extensión de Chrome (`amr17_extension/`):** Integración con *endado.com* para capturar referencia, nombre y precio de piezas directamente a una cola de importación.
 
-## Estructura
+## Estructura del proyecto
 
-```
-index.html            aplicación completa (HTML + CSS + JS)
-amr17_extension/      extensión de Chrome (manifest v3)
-tests/                pruebas con Playwright
-versiones anteriores/ historial de versiones (solo consulta)
-extension/            copia antigua de la app y de la extensión
+```text
+├── index.html               # Aplicación principal (estructura, estilos e interactividad)
+├── amr17_extension/         # Extensión de Chrome (Manifest V3)
+├── tests/                   # Suite de pruebas End-to-End con Playwright
+├── versiones anteriores/    # Histórico de versiones previas
+└── extension/               # Legado de versiones iniciales
 ```
 
-## Ejecutar en local
+## Instalación y ejecución local
 
+### Con Node.js
 ```bash
 npm install
 npm start
 ```
 
-Abrir `http://127.0.0.1:5500/index.html`.
+### Sin dependencias (Python)
+```bash
+python -m http.server 5500 --bind 127.0.0.1
+```
 
-Sin Node: `python -m http.server 5500 --bind 127.0.0.1`.
+Abrir en el navegador: `http://127.0.0.1:5500/index.html`
 
-## Pruebas
+## Pruebas automatizadas (E2E)
 
-Con el servidor arrancado:
+Con el servidor local levantado, ejecutar la batería de tests con Playwright:
 
 ```bash
 npx playwright install chromium
 npm test
 ```
 
-## Extensión de Chrome
+## Instalación de la extensión de Chrome
 
-1. `chrome://extensions` → activar modo desarrollador.
-2. "Cargar descomprimida" → carpeta `amr17_extension/`.
-3. En una ficha de producto de endado.com aparece el panel "Añadir al presupuesto".
-4. Abrir el popup de la extensión y pulsar "Cargar cola" para pasar las piezas a las líneas.
+1. Acceder a `chrome://extensions` y activar el **Modo de desarrollador**.
+2. Pulsar **Cargar descomprimida** y seleccionar la carpeta `amr17_extension/`.
+3. Navegar a cualquier ficha de producto en *endado.com* y utilizar el panel inyectado **"Añadir al presupuesto"**.
+4. Abrir el popup de la extensión y pulsar **"Cargar cola"** para volcar las piezas en la aplicación.
 
-## Tecnologías
+## Stack Tecnológico
 
-| Capa | Qué se usa |
-|---|---|
-| HTML | HTML5, formularios, tablas, `template`, atributos `aria-*` |
-| CSS | Tailwind CSS (CDN), `@media print`, flexbox y grid |
-| JavaScript | ES6+, Alpine.js 3, PDF.js 3.11, Web Storage, Blob, Intl |
-| Extensión | Manifest V3, content script, `chrome.storage.local` |
-| Herramientas | npm, http-server, Playwright, Git/GitHub |
+| Capa | Tecnologías y APIs |
+| :--- | :--- |
+| **Interfaz y Estilos** | HTML5 semántico, Tailwind CSS, Flexbox, CSS Grid, `@media print` |
+| **Lógica y Reactividad** | JavaScript ES6+, Alpine.js 3, `Intl.NumberFormat`, Expresiones Regulares |
+| **Procesamiento y Archivos** | `PDF.js 3.11`, `Blob API`, `URL.createObjectURL` |
+| **Almacenamiento actual** | Web Storage API (`localStorage`) |
+| **Extensión Web** | Chrome Manifest V3, Content Scripts, `MutationObserver`, `chrome.storage.local` |
+| **Testing y Herramientas** | Playwright, Node.js / npm, `http-server`, Git |
 
-## Qué contiene (HTML, CSS y JS)
+## Arquitectura y Decisiones Técnicas
 
-**HTML**
-- Estructura de documento: `doctype`, `lang`, `meta charset`, `meta viewport`, `head` y `body`.
-- Formularios: `input` de tipo text, number, date, email y file; `textarea`; `button`; `label`.
-- Atributos: `placeholder`, `readonly`, `min`, `step`, `accept`, `aria-label`.
-- Tabla con `thead` y `tbody`; etiqueta `template` para repetir filas.
-- Directivas de Alpine: `x-data`, `x-model`, `x-for`, `x-show`, `x-text`, `x-cloak`, `@click`, `:class`, `:disabled`.
+- **Reactividad ligera sin paso de compilación:** Se eligió **Alpine.js** para gestionar el estado reactivo (`x-data`, getters calculados para totales y márgenes) manteniendo la aplicación en un único archivo portable.
+- **Aislamiento en generación de documentos:** Para la copia del cliente se genera un documento HTML independiente en memoria mediante `Blob` y `URL.createObjectURL`, aplicando sanitización de cadenas (escape de HTML) para prevenir vulnerabilidades XSS antes de invocar `window.print()`.
+- **Extracción de datos en cliente:** El parseo de PDFs se realiza íntegramente en el navegador mediante `PDF.js` y expresiones regulares, garantizando la privacidad de los documentos sin subir archivos a terceros.
+- **Observabilidad del DOM en la extensión:** El *content script* utiliza `MutationObserver` para detectar cambios dinámicos en el catálogo web e inyectar el botón de captura de forma resiliente.
 
-**CSS**
-- Tailwind en modo utilidades: espaciado, colores, bordes, sombras, tipografía.
-- Diseño responsive con prefijo `md:`.
-- Flexbox (`flex`, `justify-between`, `gap`) y grid (`grid-cols-2`).
-- Estados `hover:` y `disabled:`.
-- CSS propio: toasts con `position:fixed`, `[x-cloak]`, `@media print` con clases `no-print` y `print-only`.
-- Plantilla de impresión independiente con su propio CSS (grid, `border-collapse`, `box-sizing`).
+## Roadmap: Próxima etapa (Implementación de Backend)
 
-**JavaScript**
-- Variables `const`/`let`, funciones flecha, template literals, spread y `?.`/`??`.
-- Objetos, arrays y métodos `map`, `filter`, `reduce`, `find`, `findIndex`, `forEach`, `sort`.
-- Getters (`get subtotal()`) para valores calculados.
-- DOM: `getElementById`, `createElement`, `appendChild`, eventos.
-- `async/await`, Promesas y `try/catch/finally`.
-- `JSON.parse` / `JSON.stringify` y `localStorage`.
-- Expresiones regulares para leer el PDF.
-- `Blob`, `URL.createObjectURL`, `window.open`, `window.print`.
-- `Intl.NumberFormat` y `Date` para moneda y fechas.
-- Escape de HTML para evitar inyección en la copia de cliente.
-- Extensión: `MutationObserver`, `chrome.storage.local`, content scripts.
+El proyecto se encuentra actualmente en su **Fase 1 (MVP Frontend)**. El siguiente paso crítico en el desarrollo es la **implementación de un Backend completo** para superar las limitaciones del almacenamiento local (`localStorage`) y permitir el trabajo multiusuario en red dentro del taller:
 
-## Qué debe saber un alumno de 2º DAW para defender este proyecto
-
-**Cliente (DWEC / DIW)**
-- Diferencia entre DOM real y reactividad de un framework (Alpine) frente a Angular, React o Vue.
-- Ciclo de vida: evento → cambio de estado → actualización de la vista.
-- Web Storage: `localStorage` vs `sessionStorage` vs cookies, límites (~5 MB) y que no es seguro ni compartido entre equipos.
-- Asincronía: Promesas, `async/await`, `fetch` y carga de scripts externos.
-- Diseño responsive, accesibilidad (`aria`, `label`, contraste), usabilidad y hoja de estilos de impresión.
-- Seguridad en cliente: XSS, por qué se escapa el HTML y por qué no se debe confiar en datos del usuario.
-
-**Servidor (DWES / Spring)**
-- Qué le falta a la app para ser real: backend, API REST, base de datos, autenticación y copias de seguridad.
-- Cómo se modelaría: entidades `Presupuesto`, `Cliente`, `Vehículo`, `Línea`; controladores, servicios y repositorios.
-- Cómo se migraría el `localStorage` a una API con JSON y códigos HTTP.
-
-**Despliegue**
-- Servir contenido estático (Apache, Nginx, GitHub Pages, Netlify), HTTPS y dominio.
-- Por qué el CDN de Tailwind no es para producción y cómo se compila con la CLI.
-- Control de versiones con Git, `.gitignore`, ramas y releases; gestión de dependencias con npm.
-
-**Calidad**
-- Pruebas automáticas end-to-end con Playwright y qué se prueba en cada una.
-- Depuración con las DevTools: consola, red, almacenamiento y pestaña Application.
-
-## Limitaciones conocidas
-
-- Los datos viven solo en el navegador: borrar la caché o cambiar de equipo los pierde.
-- La importación de PDF está ajustada a un formato concreto (Autodata) y puede no leer otros.
-- La app no carga sola la cola de la extensión: se hace desde el popup de la extensión.
+- [x] **Fase 1: Frontend y MVP Local-First** — Interfaz completa, cálculos en tiempo real, importación de PDF, impresión y extensión de Chrome.
+- [ ] **Fase 2: Desarrollo de API REST (Backend)** — Creación del servidor con Spring Boot / Node.js estructurado en arquitectura por capas (Controladores, Servicios y Repositorios).
+- [ ] **Fase 3: Base de Datos Relacional** — Migración de `localStorage` a PostgreSQL / MySQL modelando las entidades `Taller`, `Cliente`, `Vehiculo`, `Presupuesto` y `LineaPresupuesto`.
+- [ ] **Fase 4: Seguridad y Control de Acceso** — Sistema de autenticación mediante tokens JWT y gestión de roles (administrador vs. mecánico).
+- [ ] **Fase 5: Integración Full-Stack y Producción** — Conexión del frontend y de la extensión de Chrome directamente contra los endpoints del servidor, compilación de Tailwind CSS y despliegue en nube.
 
 ## Licencia
 
-ISC.
+ISC
